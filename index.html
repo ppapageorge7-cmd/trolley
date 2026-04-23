@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trolley — Your Smart Grocery Companion</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,700;1,9..144,400&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #f5f2eb;
+  --bg2:      #ede9e0;
+  --surface:  #ffffff;
+  --surface2: #f9f7f3;
+  --border:   #ddd8cc;
+  --border2:  #c8c2b4;
+  --green:    #1a4a2e;
+  --green2:   #2d6b47;
+  --green3:   #3d8f60;
+  --greenlt:  #e8f5ee;
+  --amber:    #c17d2a;
+  --amberlt:  #fdf3e3;
+  --red:      #c0392b;
+  --redlt:    #fdecea;
+  --blue:     #2471a3;
+  --bluelt:   #eaf4fb;
+  --text:     #1c1a16;
+  --text2:    #4a4438;
+  --muted:    #8a8070;
+  --muted2:   #b0a898;
+  --r:        12px;
+  --rs:       8px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden;font-size:15px}
+
+/* subtle texture */
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23a09880' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");pointer-events:none;z-index:0}
+
+/* HEADER */
+header{display:flex;align-items:center;justify-content:space-between;padding:16px 36px;border-bottom:1px solid var(--border);position:sticky;top:0;background:rgba(245,242,235,0.96);backdrop-filter:blur(12px);z-index:100}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo-mark{width:34px;height:34px;background:var(--green);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.logo-text{font-family:'Fraunces',serif;font-size:21px;font-weight:700;color:var(--green);letter-spacing:-0.3px}
+.logo-text span{color:var(--green3)}
+.header-right{display:flex;align-items:center;gap:10px}
+.api-wrap{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);padding:7px 13px;transition:border-color .2s}
+.api-wrap:focus-within{border-color:var(--green3)}
+.api-dot{width:7px;height:7px;border-radius:50%;background:var(--muted2);flex-shrink:0;transition:all .3s}
+.api-dot.ok{background:var(--green3);box-shadow:0 0 6px rgba(61,143,96,.4)}
+.api-input{background:none;border:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:12px;width:250px;outline:none}
+.api-input::placeholder{color:var(--muted2)}
+.badge{font-size:11px;background:var(--greenlt);border:1px solid rgba(45,107,71,.2);color:var(--green2);padding:4px 10px;border-radius:20px;font-weight:500}
+
+/* NAV */
+nav{display:flex;padding:0 36px;background:var(--surface);border-bottom:1px solid var(--border);gap:0;overflow-x:auto;position:sticky;top:67px;z-index:99}
+nav::-webkit-scrollbar{height:0}
+.tab{padding:13px 20px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .2s;display:flex;align-items:center;gap:6px;letter-spacing:.1px}
+.tab:hover{color:var(--text2)}
+.tab.active{color:var(--green);border-bottom-color:var(--green);font-weight:600}
+.tab-icon{font-size:15px}
+
+/* MAIN */
+main{max-width:1160px;margin:0 auto;padding:36px;position:relative;z-index:1}
+.panel{display:none;animation:up .22s ease}
+.panel.active{display:block}
+@keyframes up{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+
+/* SHARED */
+.page-head{margin-bottom:28px}
+.page-title{font-family:'Fraunces',serif;font-size:28px;font-weight:700;color:var(--text);line-height:1.2;margin-bottom:4px}
+.page-title em{color:var(--green);font-style:italic}
+.page-sub{font-size:13px;color:var(--muted);font-weight:400}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:22px}
+.card+.card{margin-top:14px}
+.card-label{font-size:11px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+.btn{padding:10px 18px;border-radius:var(--rs);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .18s;border:none;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:var(--green);color:#fff}
+.btn-primary:hover{background:var(--green2);transform:translateY(-1px);box-shadow:0 4px 12px rgba(26,74,46,.2)}
+.btn-primary:disabled{background:var(--border2);color:var(--muted);cursor:not-allowed;transform:none;box-shadow:none}
+.btn-outline{background:transparent;color:var(--green);border:1.5px solid var(--green)}
+.btn-outline:hover{background:var(--greenlt)}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border)}
+.btn-ghost:hover{background:var(--bg2);border-color:var(--border2)}
+.empty-state{text-align:center;padding:56px 24px;color:var(--muted)}
+.empty-state .ei{font-size:36px;margin-bottom:12px}
+.empty-state p{font-size:13px;line-height:1.7;max-width:260px;margin:0 auto;color:var(--muted)}
+
+/* ── SCAN ── */
+.scan-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}
+.drop-zone{border:2px dashed var(--border2);border-radius:var(--r);padding:44px 28px;text-align:center;cursor:pointer;transition:all .25s;position:relative;background:var(--surface2);min-height:300px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
+.drop-zone:hover,.drop-zone.drag{border-color:var(--green3);background:var(--greenlt)}
+.drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.drop-zone img{width:100%;max-height:230px;object-fit:contain;border-radius:var(--rs);display:none;border:1px solid var(--border)}
+.dz-icon{font-size:38px;line-height:1}
+.dz-title{font-family:'Fraunces',serif;font-size:18px;font-weight:600;color:var(--text2)}
+.dz-sub{font-size:12px;color:var(--muted)}
+.result-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:22px;min-height:300px;display:flex;flex-direction:column}
+.res-header{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:14px;border-bottom:1px solid var(--border);margin-bottom:14px}
+.res-store{font-family:'Fraunces',serif;font-size:17px;font-weight:600;color:var(--text)}
+.res-date{font-size:11px;color:var(--muted);margin-top:2px}
+.total-tag{background:var(--green);color:#fff;padding:5px 13px;border-radius:20px;font-weight:700;font-size:14px;font-family:'Fraunces',serif}
+.items-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:4px;max-height:195px}
+.items-list::-webkit-scrollbar{width:3px}
+.items-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.item-row{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--rs);background:var(--surface2);font-size:12px;border:1px solid transparent;transition:border-color .15s}
+.item-row:hover{border-color:var(--border)}
+.item-name{flex:1;color:var(--text2)}
+.item-cat{font-size:10px;padding:2px 7px;border-radius:10px;background:var(--bg2);color:var(--muted);border:1px solid var(--border)}
+.item-price{color:var(--green2);font-weight:600;min-width:44px;text-align:right;font-size:13px}
+.spinner{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--green3);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-box{display:none;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:12px;color:var(--muted);font-size:13px}
+
+/* ── PRODUCTS ── */
+.prod-layout{display:grid;grid-template-columns:290px 1fr;gap:22px;align-items:start}
+.search-wrap{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);padding:8px 12px;margin-bottom:10px;transition:border-color .2s}
+.search-wrap:focus-within{border-color:var(--green3)}
+.search-wrap input{background:none;border:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;flex:1;outline:none}
+.search-wrap input::placeholder{color:var(--muted2)}
+.cat-pills{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px}
+.cpill{font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:all .15s;font-weight:500}
+.cpill:hover{border-color:var(--green3);color:var(--green)}
+.cpill.on{background:var(--green);color:#fff;border-color:var(--green)}
+.prod-list{display:flex;flex-direction:column;gap:5px;max-height:580px;overflow-y:auto}
+.prod-list::-webkit-scrollbar{width:3px}
+.prod-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.prod-item{display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:var(--rs);background:var(--surface);border:1.5px solid var(--border);cursor:pointer;transition:all .18s}
+.prod-item:hover{border-color:var(--border2);background:var(--surface2)}
+.prod-item.sel{border-color:var(--green);background:var(--greenlt)}
+.prod-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.prod-info{flex:1;min-width:0}
+.prod-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+.prod-meta{font-size:11px;color:var(--muted);margin-top:1px}
+.prod-price-col{text-align:right}
+.prod-price{font-family:'Fraunces',serif;font-size:14px;font-weight:600;color:var(--green2)}
+.prod-trend{font-size:10px;margin-top:1px;font-weight:500}
+.t-up{color:var(--red)}
+.t-dn{color:var(--green3)}
+.t-fl{color:var(--muted2)}
+/* detail */
+.mini-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+.ms{background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:13px;text-align:center}
+.ms-val{font-family:'Fraunces',serif;font-size:22px;font-weight:700;color:var(--green);line-height:1}
+.ms-lbl{font-size:10px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.5px}
+.chart-wrap{height:110px;margin:4px 0 8px}
+.plog{display:flex;flex-direction:column;gap:4px;max-height:170px;overflow-y:auto}
+.plog-row{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;border-radius:6px;background:var(--surface2);font-size:12px;border:1px solid transparent}
+.plog-row:hover{border-color:var(--border)}
+.plog-date{color:var(--muted)}
+.plog-store{color:var(--text2);flex:1;padding:0 10px}
+.plog-price{color:var(--green2);font-weight:600;font-family:'Fraunces',serif}
+
+/* ── SHOPPING ── */
+.shop-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px}
+.shop-tools{display:flex;gap:7px}
+.urg-section{margin-bottom:24px}
+.urg-label{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:600;letter-spacing:.9px;text-transform:uppercase;color:var(--muted);margin-bottom:9px}
+.urg-label::after{content:'';flex:1;height:1px;background:var(--border)}
+.urg-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.shop-item{display:flex;align-items:center;gap:13px;padding:13px 15px;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--rs);margin-bottom:5px;cursor:pointer;transition:all .18s}
+.shop-item:hover{border-color:var(--border2)}
+.shop-item.done{opacity:.38}
+.chk{width:19px;height:19px;border-radius:5px;border:1.5px solid var(--border2);flex-shrink:0;position:relative;transition:all .18s;background:var(--surface)}
+.shop-item.done .chk{background:var(--green);border-color:var(--green)}
+.shop-item.done .chk::after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:700}
+.si-name{flex:1;font-size:13px;font-weight:500;color:var(--text)}
+.si-cat{font-size:11px;color:var(--muted);margin-top:1px}
+.si-right{text-align:right}
+.si-price{font-size:12px;color:var(--amber);font-weight:600}
+.si-days{font-size:10px;color:var(--muted);margin-top:1px}
+
+/* ── NUTRITION ── */
+.nut-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.nut-grid .full{grid-column:1/-1}
+.score-ring{width:90px;height:90px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;border:3px solid var(--green);margin:0 auto 14px;flex-shrink:0}
+.score-num{font-family:'Fraunces',serif;font-size:26px;font-weight:700;color:var(--green);line-height:1}
+.score-of{font-size:10px;color:var(--muted)}
+.fg-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.fg-col{background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:10px 8px;text-align:center}
+.fg-bar-wrap{height:52px;display:flex;align-items:flex-end;justify-content:center;margin-bottom:6px}
+.fg-bar{width:20px;border-radius:3px 3px 0 0;transition:height .6s ease}
+.fg-name{font-size:10px;color:var(--muted);line-height:1.3}
+.fg-amt{font-size:11px;color:var(--text2);font-weight:500;margin-top:2px}
+.advice-list{display:flex;flex-direction:column;gap:7px}
+.adv{display:flex;align-items:flex-start;gap:10px;padding:11px 13px;border-radius:var(--rs);border:1px solid var(--border)}
+.adv-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+.adv-body{font-size:12px;line-height:1.6;color:var(--text2)}
+.adv-title{font-weight:600;color:var(--text);display:block;margin-bottom:1px;font-size:12px}
+.adv.good{background:var(--greenlt);border-color:rgba(45,107,71,.2)}
+.adv.warn{background:var(--amberlt);border-color:rgba(193,125,42,.2)}
+.adv.bad{background:var(--redlt);border-color:rgba(192,57,43,.2)}
+.ai-analyse-btn{width:100%;padding:14px;background:var(--green);color:#fff;border:none;border-radius:var(--rs);font-family:'Fraunces',serif;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s;letter-spacing:.2px}
+.ai-analyse-btn:hover{background:var(--green2);transform:translateY(-1px);box-shadow:0 4px 14px rgba(26,74,46,.25)}
+.ai-analyse-btn:disabled{background:var(--border2);color:var(--muted);cursor:not-allowed;transform:none;box-shadow:none}
+.ai-thinking{display:none;align-items:center;gap:10px;font-size:13px;color:var(--muted);padding:12px 0}
+.ai-result{display:none;background:var(--greenlt);border:1px solid rgba(45,107,71,.2);border-radius:var(--rs);padding:16px;font-size:13px;line-height:1.8;color:var(--text2);white-space:pre-wrap;margin-top:14px}
+.dots span{animation:blink 1.2s infinite;display:inline-block}
+.dots span:nth-child(2){animation-delay:.2s}
+.dots span:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
+
+/* ── DASHBOARD ── */
+.dash-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px}
+.kpi-val{font-family:'Fraunces',serif;font-size:30px;font-weight:700;line-height:1;margin-bottom:3px}
+.kpi-lbl{font-size:11px;color:var(--muted);letter-spacing:.4px;text-transform:uppercase}
+.kpi-sub{font-size:11px;color:var(--muted2);margin-top:3px}
+.dash-row{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}
+.cat-bar-row{display:grid;grid-template-columns:110px 1fr 55px;align-items:center;gap:8px;font-size:12px;margin-bottom:9px}
+.cb-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text2)}
+.cb-track{height:5px;background:var(--bg2);border-radius:3px;overflow:hidden}
+.cb-fill{height:100%;border-radius:3px;transition:width .8s ease}
+.cb-amt{color:var(--green2);font-weight:600;text-align:right;font-family:'Fraunces',serif;font-size:13px}
+.month-bars{display:flex;align-items:flex-end;gap:5px;height:90px;margin-top:10px}
+.mb-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
+.mb-fill{width:100%;border-radius:3px 3px 0 0;background:var(--green3);opacity:.75;min-height:3px;transition:height .6s ease}
+.mb-lbl{font-size:9px;color:var(--muted)}
+.mb-amt{font-size:9px;color:var(--muted2)}
+.rec-row{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:var(--rs);background:var(--surface2);border:1px solid var(--border);margin-bottom:5px}
+.rec-store{font-size:13px;font-weight:500;color:var(--text)}
+.rec-meta{font-size:11px;color:var(--muted);margin-top:1px}
+.rec-total{font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--green2)}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--green);padding:11px 16px;border-radius:var(--rs);font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,.1);transform:translateY(50px);opacity:0;transition:all .28s;z-index:9999;max-width:280px;color:var(--text2)}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.err{border-left-color:var(--red)}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">🛒</div>
+    <div class="logo-text">Trolley</div>
+  </div>
+  <div class="header-right">
+    <span class="badge">Early Access</span>
+    <div class="api-wrap">
+      <div class="api-dot" id="apiDot"></div>
+      <input class="api-input" id="apiKey" type="password" placeholder="Claude API key (sk-ant-...)" oninput="onKey()">
+    </div>
+  </div>
+</header>
+
+<nav>
+  <div class="tab active" onclick="go('scan')"><span class="tab-icon">📸</span>Scan Receipt</div>
+  <div class="tab" onclick="go('products')"><span class="tab-icon">📦</span>Products</div>
+  <div class="tab" onclick="go('shopping')"><span class="tab-icon">🛒</span>Shopping List</div>
+  <div class="tab" onclick="go('nutrition')"><span class="tab-icon">🥗</span>Nutrition</div>
+  <div class="tab" onclick="go('dashboard')"><span class="tab-icon">📊</span>Dashboard</div>
+</nav>
+
+<main>
+
+<!-- SCAN -->
+<div class="panel active" id="panel-scan">
+  <div class="page-head">
+    <div class="page-title">Scan a <em>Receipt</em></div>
+    <div class="page-sub">Upload a photo — AI reads every item and price in seconds</div>
+  </div>
+  <div class="scan-grid">
+    <div>
+      <div class="drop-zone" id="dz"
+        ondragover="event.preventDefault();this.classList.add('drag')"
+        ondragleave="this.classList.remove('drag')"
+        ondrop="onDrop(event)">
+        <input type="file" accept="image/*" onchange="onFile(event)">
+        <img id="prevImg">
+        <div id="dzHint">
+          <div class="dz-icon">🧾</div>
+          <div class="dz-title">Drop your receipt here</div>
+          <div class="dz-sub">or click to choose a photo · JPG, PNG, HEIC</div>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="scanBtn" onclick="doScan()" disabled style="width:100%;margin-top:10px;padding:13px;justify-content:center;font-size:14px">
+        Scan with AI →
+      </button>
+    </div>
+
+    <div class="result-box" id="resultBox">
+      <div class="empty-state" id="resEmpty" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center">
+        <div class="ei">🔍</div>
+        <p>Scan a receipt and the items will appear here</p>
+      </div>
+      <div class="loading-box" id="resLoad">
+        <div class="spinner"></div>
+        <div style="color:var(--muted);font-size:13px">Reading your receipt…</div>
+      </div>
+      <div id="resContent" style="display:none;flex:1;flex-direction:column">
+        <div class="res-header">
+          <div>
+            <div class="res-store" id="rStore">—</div>
+            <div class="res-date" id="rDate">—</div>
+          </div>
+          <div class="total-tag" id="rTotal">$0.00</div>
+        </div>
+        <div class="items-list" id="rItems"></div>
+        <button class="btn btn-primary" onclick="saveReceipt()" style="width:100%;margin-top:14px;justify-content:center">
+          ✓ Save to history
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PRODUCTS -->
+<div class="panel" id="panel-products">
+  <div class="page-head">
+    <div class="page-title">Your <em>Products</em></div>
+    <div class="page-sub">Full price history and trends for everything you buy</div>
+  </div>
+  <div class="prod-layout">
+    <div>
+      <div class="search-wrap">
+        <span style="color:var(--muted2);font-size:14px">⌕</span>
+        <input type="text" id="pSearch" placeholder="Search products…" oninput="renderProds()">
+      </div>
+      <div class="cat-pills" id="catPills"></div>
+      <div class="prod-list" id="prodList"></div>
+    </div>
+    <div id="prodDetail">
+      <div class="card">
+        <div class="empty-state">
+          <div class="ei">👆</div>
+          <p>Select a product to see its full history</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SHOPPING -->
+<div class="panel" id="panel-shopping">
+  <div class="shop-head">
+    <div class="page-head" style="margin-bottom:0">
+      <div class="page-title">Shopping <em>List</em></div>
+      <div class="page-sub" id="shopMeta">Built from your habits</div>
+    </div>
+    <div class="shop-tools">
+      <button class="btn btn-ghost" onclick="copyList()" style="font-size:12px">Copy</button>
+      <button class="btn btn-ghost" onclick="clearDone()" style="font-size:12px">Clear checked</button>
+    </div>
+  </div>
+  <div id="shopContent"></div>
+</div>
+
+<!-- NUTRITION -->
+<div class="panel" id="panel-nutrition">
+  <div class="page-head">
+    <div class="page-title">Nutrition <em>Advisor</em></div>
+    <div class="page-sub">AI analyses what you buy and suggests how to eat better</div>
+  </div>
+  <div class="nut-grid">
+    <div class="card full" id="nutOverview"></div>
+    <div class="card">
+      <div class="card-label">Food Group Balance</div>
+      <div class="fg-grid" id="fgGrid"></div>
+    </div>
+    <div class="card">
+      <div class="card-label">Quick Insights</div>
+      <div class="advice-list" id="advList"></div>
+    </div>
+    <div class="card full">
+      <div class="card-label">AI Analysis</div>
+      <button class="ai-analyse-btn" id="aiBtn" onclick="doNutAI()">
+        🧠 Analyse my diet with AI
+      </button>
+      <div class="ai-thinking" id="aiThink">
+        <div class="spinner" style="width:20px;height:20px;border-width:1.5px"></div>
+        <span>Analysing your shopping history<span class="dots"><span>.</span><span>.</span><span>.</span></span></span>
+      </div>
+      <div class="ai-result" id="aiResult"></div>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="panel" id="panel-dashboard">
+  <div class="page-head">
+    <div class="page-title">Your <em>Dashboard</em></div>
+    <div class="page-sub">Full spending overview across all receipts</div>
+  </div>
+  <div class="dash-kpis" id="dashKpis"></div>
+  <div class="dash-row">
+    <div class="card">
+      <div class="card-label">Spend by Category</div>
+      <div id="catBars"></div>
+    </div>
+    <div class="card">
+      <div class="card-label">Monthly Spend</div>
+      <div class="month-bars" id="monthBars"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-label">Receipt History</div>
+    <div id="recList"></div>
+  </div>
+</div>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── DATA ──────────────────────────────────────────
+const CE = {Dairy:'#4a90d9',Meat:'#e07060',Fish:'#50b8d0',Vegetables:'#5aaa70',Fruits:'#e8a830',Bakery:'#c8944a',Frozen:'#7080c8',Drinks:'#50a8c0',Snacks:'#d07850','Personal Care':'#c070a0',Cleaning:'#909090',Other:'#808898'};
+const EI = {Dairy:'🥛',Meat:'🥩',Fish:'🐟',Vegetables:'🥦',Fruits:'🍎',Bakery:'🍞',Frozen:'🧊',Drinks:'🥤',Snacks:'🍪','Personal Care':'🧴',Cleaning:'🧹',Other:'📦'};
+let S = {receipts:[],products:{}};
+function loadS(){try{const d=localStorage.getItem('trolley_data');if(d)S=JSON.parse(d);}catch(e){}}
+function saveS(){localStorage.setItem('trolley_data',JSON.stringify(S));}
+
+// Migrate from old cartiq_data key
+function migrateData(){
+  if(!localStorage.getItem('trolley_data')&&localStorage.getItem('cartiq_data')){
+    localStorage.setItem('trolley_data',localStorage.getItem('cartiq_data'));
+  }
+}
+
+migrateData();
+loadS();
+
+// Restore API key
+const sk = localStorage.getItem('trolley_key')||localStorage.getItem('cartiq_key');
+if(sk){document.getElementById('apiKey').value=sk;onKey();}
+
+// ── API KEY ───────────────────────────────────────
+function onKey(){
+  const k=document.getElementById('apiKey').value.trim();
+  const ok=k.startsWith('sk-ant-')&&k.length>20;
+  document.getElementById('apiDot').className='api-dot'+(ok?' ok':'');
+  if(ok)localStorage.setItem('trolley_key',k);
+}
+function getKey(){return document.getElementById('apiKey').value.trim();}
+
+// ── TABS ──────────────────────────────────────────
+function go(t){
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['scan','products','shopping','nutrition','dashboard'][i]===t));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+t).classList.add('active');
+  if(t==='products')renderProds();
+  if(t==='shopping')renderShop();
+  if(t==='nutrition')renderNut();
+  if(t==='dashboard')renderDash();
+}
+
+// ── FILE ──────────────────────────────────────────
+let curFile=null,curData=null;
+function onDrop(e){e.preventDefault();document.getElementById('dz').classList.remove('drag');const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/'))loadPrev(f);}
+function onFile(e){if(e.target.files[0])loadPrev(e.target.files[0]);}
+function loadPrev(f){
+  curFile=f;
+  const r=new FileReader();
+  r.onload=ev=>{
+    const img=document.getElementById('prevImg');
+    img.src=ev.target.result;img.style.display='block';
+    document.getElementById('dzHint').style.display='none';
+    document.getElementById('scanBtn').disabled=false;
+  };
+  r.readAsDataURL(f);
+}
+
+// ── SCAN ──────────────────────────────────────────
+async function doScan(){
+  const key=getKey();
+  if(!key||!key.startsWith('sk-ant-')){toast('Please add your Claude API key first',true);return;}
+  if(!curFile)return;
+  document.getElementById('resEmpty').style.display='none';
+  document.getElementById('resContent').style.display='none';
+  document.getElementById('resLoad').style.display='flex';
+  document.getElementById('scanBtn').disabled=true;
+  try{
+    const b64=await toB64(curFile);
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',max_tokens:2000,
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:curFile.type||'image/jpeg',data:b64}},
+          {type:'text',text:`Analyze this grocery receipt. Return ONLY valid JSON, no markdown, no explanation:\n{"store":"store name","total":0.00,"items":[{"name":"product name","category":"Dairy|Meat|Fish|Vegetables|Fruits|Bakery|Frozen|Drinks|Snacks|Cleaning|Personal Care|Other","quantity":1,"unit":"pcs|kg|L","price":0.00}]}`}
+        ]}]
+      })
+    });
+    const j=await res.json();
+    if(j.error)throw new Error(j.error.message);
+    const txt=j.content[0].text.replace(/```json\n?|\n?```/g,'').trim();
+    curData=JSON.parse(txt);
+    showRes(curData);
+  }catch(err){
+    toast('Error: '+err.message,true);
+    document.getElementById('resLoad').style.display='none';
+    document.getElementById('resEmpty').style.display='flex';
+  }
+  document.getElementById('scanBtn').disabled=false;
+}
+function toB64(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(e.target.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(f);});}
+function showRes(d){
+  document.getElementById('resLoad').style.display='none';
+  document.getElementById('resContent').style.display='flex';
+  document.getElementById('rStore').textContent=d.store||'Unknown Store';
+  document.getElementById('rDate').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('rTotal').textContent='$'+Number(d.total||0).toFixed(2);
+  const ul=document.getElementById('rItems');ul.innerHTML='';
+  (d.items||[]).forEach(it=>{
+    const row=document.createElement('div');row.className='item-row';
+    row.innerHTML=`<span class="item-name">${it.name}</span><span class="item-cat">${it.category}</span><span class="item-price">$${Number(it.price).toFixed(2)}</span>`;
+    ul.appendChild(row);
+  });
+}
+function saveReceipt(){
+  if(!curData)return;
+  const rec={date:new Date().toISOString().split('T')[0],store:curData.store,total:curData.total,items:curData.items||[]};
+  S.receipts.push(rec);
+  rec.items.forEach(it=>{
+    const k=it.name.toLowerCase();
+    if(!S.products[k])S.products[k]={name:it.name,category:it.category,purchases:[]};
+    S.products[k].purchases.push({date:rec.date,price:it.price,store:rec.store});
+  });
+  saveS();curData=null;curFile=null;
+  document.getElementById('prevImg').style.display='none';
+  document.getElementById('dzHint').style.display='flex';
+  document.getElementById('resContent').style.display='none';
+  document.getElementById('resEmpty').style.display='flex';
+  document.getElementById('scanBtn').disabled=true;
+  toast('Receipt saved! ✓');
+}
+
+// ── PRODUCTS ──────────────────────────────────────
+let aCat='All',selProd=null;
+function renderProds(){
+  const ps=Object.values(S.products);
+  if(!ps.length){document.getElementById('prodList').innerHTML='<div class="empty-state"><div class="ei">📦</div><p>No products yet — scan some receipts!</p></div>';return;}
+  const cats=['All',...new Set(ps.map(p=>p.category))];
+  document.getElementById('catPills').innerHTML=cats.map(c=>`<div class="cpill${aCat===c?' on':''}" onclick="setCat('${c}')">${c}</div>`).join('');
+  const q=document.getElementById('pSearch').value.toLowerCase();
+  const filtered=ps.filter(p=>(!q||p.name.toLowerCase().includes(q))&&(aCat==='All'||p.category===aCat));
+  const ul=document.getElementById('prodList');ul.innerHTML='';
+  filtered.sort((a,b)=>b.purchases.length-a.purchases.length).forEach(p=>{
+    const prs=p.purchases.map(x=>x.price);
+    const last=prs[prs.length-1]||0,first=prs[0]||0;
+    const trend=prs.length>1?(last>first?'up':last<first?'dn':'fl'):'fl';
+    const trendTxt=prs.length>1?(trend==='up'?`▲ +$${(last-first).toFixed(2)}`:trend==='dn'?`▼ -$${(first-last).toFixed(2)}`:'→'):'';
+    const div=document.createElement('div');
+    div.className='prod-item'+(selProd===p.name.toLowerCase()?' sel':'');
+    div.innerHTML=`
+      <div class="prod-icon" style="background:${CE[p.category]||'#888'}18">${EI[p.category]||'📦'}</div>
+      <div class="prod-info"><div class="prod-name">${p.name}</div><div class="prod-meta">${p.purchases.length}× · ${p.category}</div></div>
+      <div class="prod-price-col"><div class="prod-price">$${last.toFixed(2)}</div><div class="prod-trend t-${trend}">${trendTxt}</div></div>`;
+    div.onclick=()=>{selProd=p.name.toLowerCase();renderProds();showProdDetail(p);};
+    ul.appendChild(div);
+  });
+}
+function setCat(c){aCat=c;renderProds();}
+function showProdDetail(p){
+  const prs=p.purchases;
+  const prices=prs.map(x=>x.price);
+  const avg=prices.reduce((a,b)=>a+b,0)/prices.length;
+  const mn=Math.min(...prices),mx=Math.max(...prices);
+  const first=prices[0],last=prices[prices.length-1];
+  const trend=last>first?'up':last<first?'dn':'fl';
+  const col=CE[p.category]||'#5aaa70';
+  // Chart
+  let chart='';
+  if(prices.length>1){
+    const W=320,H=90,pad=14;
+    const xs=prices.map((_,i)=>pad+(i/(prices.length-1))*(W-pad*2));
+    const ys=prices.map(v=>H-pad-(v-mn)/(mx-mn||1)*(H-pad*2));
+    const pts=xs.map((x,i)=>`${x},${ys[i]}`).join(' ');
+    const area=`${xs[xs.length-1]},${H-pad} ${xs[0]},${H-pad}`;
+    chart=`<svg width="100%" viewBox="0 0 ${W} ${H}" style="overflow:visible">
+      <defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${col}" stop-opacity=".2"/><stop offset="100%" stop-color="${col}" stop-opacity="0"/></linearGradient></defs>
+      <polygon points="${pts} ${area}" fill="url(#cg)"/>
+      <polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+      ${xs.map((x,i)=>`<circle cx="${x}" cy="${ys[i]}" r="3.5" fill="${col}" stroke="white" stroke-width="1.5"/>`).join('')}
+    </svg>`;
+  } else {
+    chart=`<div style="color:var(--muted);font-size:12px;padding:8px 0">Buy again to see price trend</div>`;
+  }
+  const trendHtml=trend==='up'?`<span class="t-up">▲ Up $${(last-first).toFixed(2)} from first purchase</span>`:trend==='dn'?`<span class="t-dn">▼ Down $${(first-last).toFixed(2)} from first purchase</span>`:`<span class="t-fl">→ Price stable</span>`;
+  const stores={};
+  prs.forEach(x=>{stores[x.store]=stores[x.store]||[];stores[x.store].push(x.price);});
+  const storeSection=Object.keys(stores).length>1?`
+    <div class="card">
+      <div class="card-label">By Store</div>
+      <div class="plog">${Object.entries(stores).map(([s,ps])=>`<div class="plog-row"><span class="plog-date">${ps.length}×</span><span class="plog-store">${s}</span><span class="plog-price">avg $${(ps.reduce((a,b)=>a+b,0)/ps.length).toFixed(2)}</span></div>`).join('')}</div>
+    </div>`:'' ;
+  document.getElementById('prodDetail').innerHTML=`
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
+        <div class="prod-icon" style="width:42px;height:42px;font-size:20px;background:${col}18;border-radius:10px;flex-shrink:0">${EI[p.category]||'📦'}</div>
+        <div>
+          <div style="font-family:'Fraunces',serif;font-size:18px;font-weight:600;color:var(--text)">${p.name}</div>
+          <div style="font-size:12px;color:var(--muted)">${p.category}</div>
+        </div>
+      </div>
+      <div class="mini-stats">
+        <div class="ms"><div class="ms-val">${prices.length}</div><div class="ms-lbl">Purchases</div></div>
+        <div class="ms"><div class="ms-val">$${avg.toFixed(2)}</div><div class="ms-lbl">Avg Price</div></div>
+        <div class="ms"><div class="ms-val">$${last.toFixed(2)}</div><div class="ms-lbl">Last Price</div></div>
+      </div>
+      <div style="font-size:12px;margin-bottom:12px;font-weight:500">${trendHtml}</div>
+      <div class="card-label">Price History</div>
+      <div class="chart-wrap">${chart}</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Purchase Log</div>
+      <div class="plog">${prs.slice().reverse().map(x=>`<div class="plog-row"><span class="plog-date">${x.date}</span><span class="plog-store">${x.store}</span><span class="plog-price">$${Number(x.price).toFixed(2)}</span></div>`).join('')}</div>
+    </div>
+    ${storeSection}`;
+}
+
+// ── SHOPPING ──────────────────────────────────────
+function renderShop(){
+  const ps=Object.values(S.products);
+  const el=document.getElementById('shopContent');
+  if(!ps.length){el.innerHTML='<div class="empty-state"><div class="ei">🛒</div><p>Scan receipts to build your smart list</p></div>';return;}
+  const today=new Date();
+  const grp={overdue:[],soon:[],upcoming:[],maybe:[]};
+  ps.forEach(p=>{
+    const prs=p.purchases;if(!prs.length)return;
+    const last=new Date(prs[prs.length-1].date);
+    const days=Math.round((today-last)/86400000);
+    const avg=prs.reduce((s,x)=>s+x.price,0)/prs.length;
+    let ad=0;
+    if(prs.length>=2){let t=0;for(let i=1;i<prs.length;i++)t+=Math.round((new Date(prs[i].date)-new Date(prs[i-1].date))/86400000);ad=Math.round(t/(prs.length-1));}
+    const it={name:p.name,category:p.category,avg,days,ad,n:prs.length};
+    if(prs.length>=2&&ad>0){const r=days/ad;if(r>=1.1)grp.overdue.push({...it,r});else if(r>=0.85)grp.soon.push({...it,r});else if(r>=0.65)grp.upcoming.push({...it,r});}
+    else if(prs.length===1&&days>=7)grp.maybe.push({...it,r:0});
+  });
+  const total=Object.values(grp).flat().length;
+  document.getElementById('shopMeta').textContent=`${total} items suggested · ${new Date().toLocaleDateString()}`;
+  if(!total){el.innerHTML='<div class="empty-state"><div class="ei">✅</div><p>All stocked up! Check back after your next shop.</p></div>';return;}
+  const secs=[
+    {k:'overdue',label:'Overdue',color:'#c0392b'},
+    {k:'soon',label:'Due Soon',color:'#c17d2a'},
+    {k:'upcoming',label:'Upcoming',color:'#2d6b47'},
+    {k:'maybe',label:'Maybe?',color:'#2471a3'},
+  ];
+  el.innerHTML=secs.map(s=>{
+    if(!grp[s.k].length)return'';
+    return`<div class="urg-section">
+      <div class="urg-label"><div class="urg-dot" style="background:${s.color}"></div>${s.label} (${grp[s.k].length})</div>
+      ${grp[s.k].sort((a,b)=>b.r-a.r).map(it=>`
+        <div class="shop-item" onclick="this.classList.toggle('done')">
+          <div class="chk"></div>
+          <div style="flex:1">
+            <div class="si-name">${it.name}</div>
+            <div class="si-cat">${EI[it.category]||''} ${it.category}</div>
+          </div>
+          <div class="si-right">
+            <div class="si-price">~$${it.avg.toFixed(2)}</div>
+            <div class="si-days">${it.ad>0?`Every ~${it.ad}d · ${it.days}d ago`:`${it.days}d since last buy`}</div>
+          </div>
+        </div>`).join('')}
+    </div>`;
+  }).join('');
+}
+function copyList(){
+  const ns=[...document.querySelectorAll('.shop-item:not(.done) .si-name')];
+  if(!ns.length){toast('No items to copy');return;}
+  navigator.clipboard.writeText(ns.map(n=>'☐ '+n.textContent).join('\n')).then(()=>toast('Copied! ✓'));
+}
+function clearDone(){document.querySelectorAll('.shop-item.done').forEach(e=>e.remove());toast('Cleared');}
+
+// ── NUTRITION ─────────────────────────────────────
+function renderNut(){
+  const ps=Object.values(S.products);
+  const ov=document.getElementById('nutOverview');
+  if(!ps.length){
+    ov.innerHTML='<div class="empty-state"><div class="ei">🥗</div><p>Scan receipts to unlock nutrition insights</p></div>';
+    document.getElementById('fgGrid').innerHTML='';document.getElementById('advList').innerHTML='';return;
+  }
+  const cats={};
+  S.receipts.forEach(r=>(r.items||[]).forEach(it=>{cats[it.category]=(cats[it.category]||0)+Number(it.price)}));
+  const tot=Object.values(cats).reduce((a,b)=>a+b,0)||1;
+  const healthy=(cats['Vegetables']||0)+(cats['Fruits']||0)+(cats['Fish']||0);
+  const processed=(cats['Snacks']||0)+(cats['Frozen']||0);
+  const score=Math.min(100,Math.round((healthy/tot)*200-(processed/tot)*100+50));
+  const scoreCol=score>70?'var(--green)':score>45?'var(--amber)':'var(--red)';
+  ov.innerHTML=`
+    <div class="card-label">Diet Score</div>
+    <div style="display:flex;align-items:center;gap:24px">
+      <div class="score-ring" style="border-color:${scoreCol}">
+        <div class="score-num" style="color:${scoreCol}">${score}</div>
+        <div class="score-of">/ 100</div>
+      </div>
+      <div style="flex:1;font-size:13px;line-height:1.7;color:var(--text2)">
+        ${score>70?'Great balance! Your shopping shows strong nutritional variety with plenty of fresh produce.':score>45?'There\'s room to improve. Try adding more fresh vegetables and reducing processed items.':'Your diet leans heavily on processed foods. More fresh produce and lean protein would make a real difference.'}
+      </div>
+    </div>`;
+  const fgs=[
+    {l:'🥦 Veg',c:['Vegetables'],col:'#5aaa70'},
+    {l:'🍎 Fruit',c:['Fruits'],col:'#e8a830'},
+    {l:'🥩 Protein',c:['Meat','Fish'],col:'#e07060'},
+    {l:'🥛 Dairy',c:['Dairy'],col:'#4a90d9'},
+    {l:'🍞 Grains',c:['Bakery','Other'],col:'#c8944a'},
+    {l:'🍪 Snacks',c:['Snacks','Frozen'],col:'#d07850'},
+    {l:'🥤 Drinks',c:['Drinks'],col:'#50a8c0'},
+    {l:'🧹 Other',c:['Cleaning','Personal Care'],col:'#909090'},
+  ];
+  const maxFg=Math.max(...fgs.map(g=>g.c.reduce((s,c)=>s+(cats[c]||0),0)))||1;
+  document.getElementById('fgGrid').innerHTML=fgs.map(g=>{
+    const v=g.c.reduce((s,c)=>s+(cats[c]||0),0);
+    const h=Math.round((v/maxFg)*44)+4;
+    return`<div class="fg-col">
+      <div class="fg-bar-wrap"><div class="fg-bar" style="height:${h}px;background:${g.col}30;border:1px solid ${g.col};border-bottom:2px solid ${g.col}"></div></div>
+      <div class="fg-name">${g.l}</div>
+      <div class="fg-amt">$${v.toFixed(0)}</div>
+    </div>`;
+  }).join('');
+  const advs=[];
+  if((cats['Vegetables']||0)<10)advs.push({t:'warn',i:'🥦',title:'Low veg spend',txt:'You\'re spending little on vegetables. Leafy greens, tomatoes or broccoli are great starting points.'});
+  else advs.push({t:'good',i:'🥦',title:'Good veg intake',txt:'You\'re consistently buying fresh vegetables. Well done!'});
+  if((cats['Fruits']||0)<8)advs.push({t:'warn',i:'🍎',title:'More fruit needed',txt:'Fruits are rich in vitamins and fibre. Bananas, apples or berries are easy additions.'});
+  if((cats['Fish']||0)>0)advs.push({t:'good',i:'🐟',title:'Eating fish — great',txt:'Oily fish provides essential omega-3s. Aim for 2 portions per week.'});
+  else advs.push({t:'bad',i:'🐟',title:'No fish detected',txt:'Try salmon, tuna, or sardines — rich in omega-3 fatty acids, great for heart health.'});
+  if((cats['Snacks']||0)>(tot*0.15))advs.push({t:'bad',i:'🍪',title:'High snack spend',txt:'Snacks take a large share of your budget. Try swapping some for nuts or fresh fruit.'});
+  advs.push({t:'good',i:'💡',title:'Tip',txt:'The more receipts you scan, the more accurate your score becomes.'});
+  document.getElementById('advList').innerHTML=advs.slice(0,5).map(a=>`<div class="adv ${a.t}"><div class="adv-icon">${a.i}</div><div class="adv-body"><span class="adv-title">${a.title}</span>${a.txt}</div></div>`).join('');
+}
+async function doNutAI(){
+  const key=getKey();
+  if(!key||!key.startsWith('sk-ant-')){toast('Add your API key first',true);return;}
+  if(!Object.keys(S.products).length){toast('Scan some receipts first',true);return;}
+  document.getElementById('aiBtn').disabled=true;
+  document.getElementById('aiThink').style.display='flex';
+  document.getElementById('aiResult').style.display='none';
+  const cats={};
+  S.receipts.forEach(r=>(r.items||[]).forEach(it=>{cats[it.category]=(cats[it.category]||0)+Number(it.price)}));
+  const top=Object.values(S.products).sort((a,b)=>b.purchases.length-a.purchases.length).slice(0,20).map(p=>`${p.name} (×${p.purchases.length})`).join(', ');
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',max_tokens:600,
+        messages:[{role:'user',content:`You are a friendly nutrition advisor. Analyse this grocery data and give practical advice.\n\nSpend by category: ${JSON.stringify(cats)}\nMost bought: ${top}\nTotal receipts: ${S.receipts.length}\n\nProvide:\n1. Overall diet assessment (2-3 sentences)\n2. 3 strengths\n3. 3 improvements with specific product suggestions\n4. One simple weekly meal idea using what they already buy\n\nFriendly, practical, under 280 words. Plain text only, no bullet symbols or markdown.`}]
+      })
+    });
+    const j=await res.json();
+    if(j.error)throw new Error(j.error.message);
+    document.getElementById('aiResult').textContent=j.content[0].text;
+    document.getElementById('aiResult').style.display='block';
+  }catch(err){toast('AI error: '+err.message,true);}
+  document.getElementById('aiThink').style.display='none';
+  document.getElementById('aiBtn').disabled=false;
+}
+
+// ── DASHBOARD ─────────────────────────────────────
+function renderDash(){
+  const recs=S.receipts;
+  if(!recs.length){
+    document.getElementById('dashKpis').innerHTML='<div class="empty-state" style="grid-column:1/-1"><div class="ei">📊</div><p>Scan receipts to see your dashboard</p></div>';
+    ['catBars','monthBars','recList'].forEach(id=>document.getElementById(id).innerHTML='');return;
+  }
+  const tot=recs.reduce((s,r)=>s+Number(r.total||0),0);
+  const items=recs.reduce((s,r)=>s+(r.items||[]).length,0);
+  const uniq=Object.keys(S.products).length;
+  document.getElementById('dashKpis').innerHTML=[
+    {v:'$'+tot.toFixed(0),l:'Total Spent',s:recs.length+' receipts',c:'var(--green)'},
+    {v:'$'+(tot/recs.length).toFixed(0),l:'Avg per Shop',s:'per receipt',c:'var(--green2)'},
+    {v:uniq,l:'Products Tracked',s:items+' total items',c:'var(--amber)'},
+    {v:recs.length,l:'Receipts Scanned',s:'all time',c:'var(--muted)'},
+  ].map(x=>`<div class="kpi"><div class="kpi-val" style="color:${x.c}">${x.v}</div><div class="kpi-lbl">${x.l}</div><div class="kpi-sub">${x.s}</div></div>`).join('');
+  const cats={};
+  recs.forEach(r=>(r.items||[]).forEach(it=>{cats[it.category]=(cats[it.category]||0)+Number(it.price)}));
+  const sc=Object.entries(cats).sort((a,b)=>b[1]-a[1]);
+  const mc=sc[0]?.[1]||1;
+  document.getElementById('catBars').innerHTML=sc.map(([cat,amt])=>`
+    <div class="cat-bar-row">
+      <div class="cb-name">${EI[cat]||''} ${cat}</div>
+      <div class="cb-track"><div class="cb-fill" style="width:${(amt/mc*100).toFixed(0)}%;background:${CE[cat]||'#888'}"></div></div>
+      <div class="cb-amt">$${amt.toFixed(0)}</div>
+    </div>`).join('');
+  const months={};
+  recs.forEach(r=>{const m=r.date.substring(0,7);months[m]=(months[m]||0)+Number(r.total||0);});
+  const sm=Object.entries(months).sort((a,b)=>a[0].localeCompare(b[0]));
+  const mm=Math.max(...sm.map(x=>x[1]))||1;
+  document.getElementById('monthBars').innerHTML=sm.map(([m,amt])=>`
+    <div class="mb-col">
+      <div class="mb-amt">$${amt.toFixed(0)}</div>
+      <div class="mb-fill" style="height:${Math.round((amt/mm)*72)+6}px"></div>
+      <div class="mb-lbl">${m.substring(5)}</div>
+    </div>`).join('');
+  document.getElementById('recList').innerHTML=recs.slice().reverse().slice(0,10).map(r=>`
+    <div class="rec-row">
+      <div><div class="rec-store">${r.store}</div><div class="rec-meta">${r.date} · ${(r.items||[]).length} items</div></div>
+      <div class="rec-total">$${Number(r.total).toFixed(2)}</div>
+    </div>`).join('');
+}
+
+// ── TOAST ─────────────────────────────────────────
+function toast(msg,err=false){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast show'+(err?' err':'');
+  setTimeout(()=>t.className='toast',3000);
+}
+</script>
+</body>
+</html>
